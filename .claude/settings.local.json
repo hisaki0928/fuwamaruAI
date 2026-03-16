@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest fuwamaru-os --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --yes)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm:*)",
+      "Bash(where node:*)",
+      "Bash(ls \"C:/Users/fukuh/OneDrive/デスクトップ/ふわまるAI/fuwamaru-os/node_modules/.bin/next\"*)",
+      "Bash(grep -o \"\"webpack\"\"[^,}]* C:/Users/fukuh/OneDrive/デスクトップ/ふわまるAI/fuwamaru-os/node_modules/next/dist/cli/next-dev.js)",
+      "Bash(node node_modules/next/dist/bin/next dev --help)",
+      "Bash(npm install:*)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\fukuh\\\\OneDrive\\\\デスクトップ\\\\ふわまるAI\\\\fuwamaru-os\\\\components\")",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\fukuh\\\\OneDrive\\\\デスクトップ\\\\ふわまるAI\\\\fuwamaru-os\\\\.next\" -ErrorAction SilentlyContinue)",
+      "Bash(sed -i 's/MOCK_WIKI_ARTICLES/wiki/g' Wiki.tsx)",
+      "Bash(sed -i 's/MOCK_PROPOSALS/proposals/g' Vote.tsx)",
+      "Bash(sed -i 's/MOCK_INVENTORY/inventory/g' Inventory.tsx)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Fuwamaru OS (dev)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["run-dev.js", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Fuwamaru OS (production preview)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["run-dev.js", "start"],
+      "port": 3000
+    }
+  ]
+}

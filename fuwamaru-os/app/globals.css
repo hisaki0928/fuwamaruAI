@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  /* ── Warm Cream Cafe Theme ── */
+
+  /* Backgrounds */
+  --c-bg0: #FAF6EF;   /* main — warm cream */
+  --c-bg1: #F2EAE0;   /* sidebar / header — latte */
+  --c-bg2: #EAE0D2;   /* card surface */
+  --c-bg3: #DDD3BF;   /* input / badge / ring track */
+
+  /* Borders */
+  --c-border: rgba(120, 85, 50, 0.13);
+
+  /* Text */
+  --c-t0: #1C1208;    /* primary — deep espresso */
+  --c-t1: #50381A;    /* secondary — coffee */
+  --c-t2: #9A7852;    /* muted — caramel */
+
+  /* Accents (darker shades for cream bg contrast) */
+  --c-xp:     #B5640A;   /* amber — XP / streaks */
+  --c-fp:     #5A28B0;   /* violet — FP */
+  --c-green:  #1E7A45;
+  --c-blue:   #1A55A0;
+  --c-red:    #B52828;
+  --c-orange: #C45000;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--c-bg0);
+  color: var(--c-t0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar — warm tone */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(120,85,50,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(120,85,50,0.35); }
