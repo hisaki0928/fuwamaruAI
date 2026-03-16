@@ -1,7 +1,7 @@
 import type {
   User, Mission, NavGroup, Badge, RankingEntry,
   DailyReport, ShiftEntry, TimeRecord, ShopItem,
-  POSItem, InventoryItem, CommunityPost, WikiArticle, Proposal,
+  POSItem, InventoryItem, CommunityPost, WikiArticle, Proposal, Stat,
 } from "./types";
 import {
   LayoutDashboard, ShoppingCart, Calendar, Clock,
@@ -279,11 +279,11 @@ export const MOCK_SHOP_ITEMS: ShopItem[] = [
 // ─────────────────────────────────────────────────────────
 // 統計カード
 // ─────────────────────────────────────────────────────────
-export const MOCK_STATS = [
-  { label: "今日の売上", value: "¥47,280", sub: "+12% 前日比", trend: "up" as const },
-  { label: "接客件数",   value: "34件",    sub: "目標: 40件",  trend: "neutral" as const },
-  { label: "チームXP",  value: "12,540",  sub: "今週獲得",   trend: "up" as const },
-  { label: "連続出勤",  value: "7日",     sub: "ストリーク中", trend: "up" as const },
+export const MOCK_STATS: Stat[] = [
+  { label: "今日の売上", value: "¥47,280", sub: "+12% 前日比",  trend: "up" },
+  { label: "接客件数",   value: "34件",    sub: "目標: 40件",   trend: "neutral" },
+  { label: "チームXP",  value: "12,540",  sub: "今週獲得",    trend: "up" },
+  { label: "連続出勤",  value: "7日",     sub: "ストリーク中", trend: "up" },
 ];
 
 // ─────────────────────────────────────────────────────────

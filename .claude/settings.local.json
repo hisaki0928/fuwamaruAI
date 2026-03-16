@@ -14,7 +14,9 @@
       "Bash(sed -i 's/MOCK_WIKI_ARTICLES/wiki/g' Wiki.tsx)",
       "Bash(sed -i 's/MOCK_PROPOSALS/proposals/g' Vote.tsx)",
       "Bash(sed -i 's/MOCK_INVENTORY/inventory/g' Inventory.tsx)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npx next:*)"
     ]
   }
 }
