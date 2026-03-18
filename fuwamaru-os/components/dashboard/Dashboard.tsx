@@ -19,7 +19,6 @@ import { Wiki } from "./content/Wiki";
 import { Vote } from "./content/Vote";
 import { Settings } from "./content/Settings";
 import { Admin } from "./content/Admin";
-import { StoreProvider } from "@/lib/store";
 
 interface DashboardProps {
   user: User;
@@ -51,7 +50,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   }
 
   return (
-    <StoreProvider>
     <div style={{ display: "flex", height: "100vh", background: "var(--c-bg0)" }}>
       <Sidebar activeNav={activeNav} onNav={setActiveNav} onLogout={onLogout} role={user.role} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
@@ -61,6 +59,5 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         </main>
       </div>
     </div>
-    </StoreProvider>
   );
 }

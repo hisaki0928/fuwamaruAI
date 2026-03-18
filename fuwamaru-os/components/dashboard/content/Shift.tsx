@@ -1,25 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { MOCK_SHIFTS } from "@/lib/mock-data";
+import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
+import type { ShiftEntry, ShiftStatus } from "@/lib/types";
+import { useStore } from "@/lib/store";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 const STATUS_META = {
-  confirmed: { label: "確定", color: "#34d399", bg: "rgba(52,211,153,0.12)" },
-  pending:   { label: "申請中", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
-  off:       { label: "休み", color: "var(--c-t2)", bg: "var(--c-bg3)" },
+  confirmed: { label: "確定",    color: "#34d399", bg: "rgba(52,211,153,0.12)" },
+  pending:   { label: "申請中",  color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+  off:       { label: "休み",    color: "var(--c-t2)", bg: "var(--c-bg3)" },
 } as const;
 
-export function Shift() {
-  const [year, setYear] = useState(2025);
-  const [month, setMonth] = useState(3);
+const SHIFT_STATUS_OPTIONS: ShiftStatus[] = ["confirmed", "pending", "off"];
 
-  const firstDay = new Date(year, month - 1, 1).getDay();
+export function Shift() {
+  const { shifts, setShifts } = useStore();
+  const [year, setYear]   = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+
+  // Modal state
+  const [modalDate, setModalDate]     = useState<string | null>(null);
+  const [modalStart, setModalStart]   = useState("09:00");
+  const [modalEnd, setModalEnd]       = useState("17:00");
+  const [modalStatus, setModalStatus] = useState<ShiftStatus>("confirmed");
+  const [modalNote, setModalNote]     = useState("");
+
+  const firstDay    = new Date(year, month - 1, 1).getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  const shiftMap = Object.fromEntries(MOCK_SHIFTS.map((s) => [s.date, s]));
+  const shiftMap = Object.fromEntries(shifts.map((s) => [s.date, s]));
 
   function prevMonth() {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -35,8 +46,51 @@ export function Shift() {
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const totalWork = MOCK_SHIFTS.filter((s) => s.status !== "off" && s.date.startsWith(`${year}-${String(month).padStart(2, "0")}`)).length;
+  const totalWork = shifts.filter(
+    (s) => s.status !== "off" && s.date.startsWith(`${year}-${String(month).padStart(2, "0")}`)
+  ).length;
   const totalHours = totalWork * 7.5;
+
+  function openModal(dateStr: string) {
+    const existing = shiftMap[dateStr];
+    if (existing) {
+      setModalStart(existing.start ?? "09:00");
+      setModalEnd(existing.end ?? "17:00");
+      setModalStatus(existing.status);
+      setModalNote(existing.note ?? "");
+    } else {
+      setModalStart("09:00");
+      setModalEnd("17:00");
+      setModalStatus("confirmed");
+      setModalNote("");
+    }
+    setModalDate(dateStr);
+  }
+
+  function saveShift() {
+    if (!modalDate) return;
+    const newEntry: ShiftEntry = {
+      date: modalDate,
+      status: modalStatus,
+      ...(modalStatus !== "off" ? { start: modalStart, end: modalEnd } : {}),
+      ...(modalNote ? { note: modalNote } : {}),
+    };
+    const existing = shifts.find((s) => s.date === modalDate);
+    if (existing) {
+      setShifts(shifts.map((s) => s.date === modalDate ? newEntry : s));
+    } else {
+      setShifts([...shifts, newEntry]);
+    }
+    setModalDate(null);
+  }
+
+  function deleteShift() {
+    if (!modalDate) return;
+    setShifts(shifts.filter((s) => s.date !== modalDate));
+    setModalDate(null);
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div style={{ padding: "24px", maxWidth: 760 }}>
@@ -51,7 +105,7 @@ export function Shift() {
         <div>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--c-t0)" }}>シフト管理</h1>
           <p style={{ margin: 0, fontSize: 12, color: "var(--c-t2)" }}>
-            今月の勤務: {totalWork}日 / 約{totalHours}時間
+            今月の勤務: {totalWork}日 / 約{totalHours}時間 · 日付をクリックで編集
           </p>
         </div>
       </div>
@@ -97,20 +151,25 @@ export function Shift() {
           {cells.map((day, idx) => {
             if (!day) return <div key={`empty-${idx}`} style={{ minHeight: 72, borderBottom: "1px solid var(--c-border)", borderRight: idx % 7 !== 6 ? "1px solid var(--c-border)" : "none" }} />;
 
-            const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const shift = shiftMap[dateStr];
+            const dateStr   = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const shift     = shiftMap[dateStr];
             const dayOfWeek = (firstDay + day - 1) % 7;
-            const isToday = dateStr === "2025-03-12";
+            const isToday   = dateStr === todayStr;
 
             return (
               <div
                 key={day}
+                onClick={() => openModal(dateStr)}
                 style={{
                   minHeight: 72, padding: "8px 6px",
                   borderBottom: "1px solid var(--c-border)",
                   borderRight: (firstDay + day - 1) % 7 !== 6 ? "1px solid var(--c-border)" : "none",
                   background: isToday ? "rgba(245,158,11,0.05)" : "transparent",
+                  cursor: "pointer",
+                  transition: "background 0.12s",
                 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = isToday ? "rgba(245,158,11,0.05)" : "transparent"; }}
               >
                 <div style={{
                   width: 22, height: 22, borderRadius: 6, marginBottom: 4,
@@ -149,6 +208,102 @@ export function Shift() {
           </div>
         ))}
       </div>
+
+      {/* Edit Modal */}
+      {modalDate && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,0.5)", display: "flex",
+            alignItems: "center", justifyContent: "center", padding: 16,
+          }}
+          onClick={() => setModalDate(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--c-bg0)", borderRadius: 14, width: "100%", maxWidth: 380,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.3)", overflow: "hidden",
+            }}
+          >
+            {/* Modal header */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "16px 20px 12px", borderBottom: "1px solid var(--c-border)",
+            }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "var(--c-t0)" }}>
+                シフト編集 — {modalDate}
+              </span>
+              <button onClick={() => setModalDate(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X size={16} color="var(--c-t2)" />
+              </button>
+            </div>
+            <div style={{ padding: "16px 20px" }}>
+              {/* Status */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--c-t2)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>ステータス</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {SHIFT_STATUS_OPTIONS.map((s) => (
+                    <button key={s} onClick={() => setModalStatus(s)} style={{
+                      flex: 1, padding: "7px 0", borderRadius: 8, border: "none",
+                      cursor: "pointer", fontSize: 12, fontWeight: 600,
+                      background: modalStatus === s ? STATUS_META[s].bg : "var(--c-bg2)",
+                      color: modalStatus === s ? STATUS_META[s].color : "var(--c-t1)",
+                      outline: modalStatus === s ? `1px solid ${STATUS_META[s].color}50` : "none",
+                    }}>
+                      {STATUS_META[s].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time (hidden for "off") */}
+              {modalStatus !== "off" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  {[
+                    { label: "開始時間", val: modalStart, set: setModalStart },
+                    { label: "終了時間", val: modalEnd,   set: setModalEnd   },
+                  ].map(({ label, val, set }) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--c-t2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
+                      <input type="time" value={val} onChange={(e) => set(e.target.value)} style={{
+                        width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 13, boxSizing: "border-box",
+                        background: "var(--c-bg2)", border: "1px solid var(--c-border)", color: "var(--c-t0)", outline: "none",
+                      }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Note */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--c-t2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.6 }}>メモ（任意）</div>
+                <input type="text" value={modalNote} onChange={(e) => setModalNote(e.target.value)}
+                  placeholder="例：申請中、研修など"
+                  style={{
+                    width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 13, boxSizing: "border-box",
+                    background: "var(--c-bg2)", border: "1px solid var(--c-border)", color: "var(--c-t0)", outline: "none",
+                  }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={saveShift} style={{
+                  flex: 1, padding: "10px", borderRadius: 9, border: "none", cursor: "pointer",
+                  fontSize: 13, fontWeight: 700, background: "var(--c-xp)", color: "#fff",
+                }}>保存する</button>
+                {shiftMap[modalDate] && (
+                  <button onClick={deleteShift} style={{
+                    padding: "10px 14px", borderRadius: 9, border: `1px solid var(--c-red)`,
+                    background: "transparent", color: "var(--c-red)", cursor: "pointer", fontSize: 13, fontWeight: 700,
+                  }}>削除</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

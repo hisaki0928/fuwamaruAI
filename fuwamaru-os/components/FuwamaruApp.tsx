@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Screen, User } from "@/lib/types";
 import { USERS_BY_ID } from "@/lib/mock-data";
+import { StoreProvider } from "@/lib/store";
 import { LoginScreen } from "./auth/LoginScreen";
 import { Dashboard } from "./dashboard/Dashboard";
 
@@ -23,9 +24,12 @@ export function FuwamaruApp() {
     setScreen("login");
   }
 
-  if (screen === "dashboard" && currentUser) {
-    return <Dashboard user={currentUser} onLogout={handleLogout} />;
-  }
-
-  return <LoginScreen onLogin={handleLogin} />;
+  return (
+    <StoreProvider>
+      {screen === "dashboard" && currentUser
+        ? <Dashboard user={currentUser} onLogout={handleLogout} />
+        : <LoginScreen onLogin={handleLogin} />
+      }
+    </StoreProvider>
+  );
 }

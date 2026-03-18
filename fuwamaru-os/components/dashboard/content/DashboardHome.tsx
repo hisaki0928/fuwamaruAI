@@ -1,6 +1,6 @@
 "use client";
 
-import { Zap, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
+import { Zap, TrendingUp, TrendingDown, Minus, Activity, AlertTriangle } from "lucide-react";
 import type { User } from "@/lib/types";
 import { MOCK_STATS, MOCK_ACTIVITY } from "@/lib/mock-data";
 import { useStore } from "@/lib/store";
@@ -12,9 +12,12 @@ interface DashboardHomeProps {
 }
 
 export function DashboardHome({ user }: DashboardHomeProps) {
-  const { missions } = useStore();
+  const { missions, inventory } = useStore();
   const completedMissions = missions.filter((m) => m.progress >= m.total).length;
   const totalMissions = missions.length;
+
+  const criticalItems = inventory.filter((i) => i.status === "critical");
+  const lowItems      = inventory.filter((i) => i.status === "low");
 
   return (
     <div
@@ -54,6 +57,46 @@ export function DashboardHome({ user }: DashboardHomeProps) {
         </div>
         <CircleLevel level={user.level} xp={user.xp} xpMax={user.xpMax} size={70} />
       </div>
+
+      {/* Low Stock Alert Banner */}
+      {(criticalItems.length > 0 || lowItems.length > 0) && (
+        <div style={{
+          background: criticalItems.length > 0 ? "rgba(181,40,40,0.07)" : "rgba(181,100,10,0.07)",
+          border: `1px solid ${criticalItems.length > 0 ? "rgba(181,40,40,0.25)" : "rgba(181,100,10,0.25)"}`,
+          borderRadius: 12,
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+        }}>
+          <AlertTriangle
+            size={16}
+            color={criticalItems.length > 0 ? "var(--c-red)" : "var(--c-xp)"}
+            style={{ marginTop: 2, flexShrink: 0 }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontSize: 13, fontWeight: 700,
+              color: criticalItems.length > 0 ? "var(--c-red)" : "var(--c-xp)",
+              marginBottom: 4,
+            }}>
+              在庫アラート
+            </div>
+            {criticalItems.length > 0 && (
+              <div style={{ fontSize: 12, color: "var(--c-t1)", marginBottom: lowItems.length > 0 ? 4 : 0 }}>
+                <span style={{ color: "var(--c-red)", fontWeight: 700 }}>補充必要：</span>
+                {criticalItems.map((i) => `${i.name} (${i.stock}${i.unit})`).join("、")}
+              </div>
+            )}
+            {lowItems.length > 0 && (
+              <div style={{ fontSize: 12, color: "var(--c-t1)" }}>
+                <span style={{ color: "var(--c-xp)", fontWeight: 700 }}>低在庫：</span>
+                {lowItems.map((i) => `${i.name} (${i.stock}${i.unit})`).join("、")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div

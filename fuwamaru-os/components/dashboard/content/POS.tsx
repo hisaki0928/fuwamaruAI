@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, CheckCircle2, Clock, Check } from "lucide-react";
 import type { POSItem, CartItem, POSCategory } from "@/lib/types";
 import { useStore } from "@/lib/store";
 
@@ -13,16 +13,22 @@ const CAT_COLORS: Record<string, string> = {
   "デザート":  "var(--c-orange)",
 };
 
-export function POS() {
-  const { posItems, inventory, setInventory } = useStore();
-  const [cat, setCat]     = useState<POSCategory | "ALL">("ドリンク");
-  const [cart, setCart]   = useState<CartItem[]>([]);
-  const [paid, setPaid]   = useState(false);
+let orderCounter = 1;
 
-  const items = cat === "ALL" ? posItems : posItems.filter((i) => i.category === cat);
+function uid() { return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`; }
+
+export function POS() {
+  const { posItems, inventory, setInventory, inventoryLogs, setInventoryLogs, pendingOrders, setPendingOrders } = useStore();
+  const [cat, setCat]   = useState<POSCategory | "ALL">("ドリンク");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [paid, setPaid] = useState(false);
+
+  const items    = cat === "ALL" ? posItems : posItems.filter((i) => i.category === cat);
   const subtotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0);
   const tax      = Math.round(subtotal * 0.1);
   const total    = subtotal + tax;
+
+  const pendingList = pendingOrders.filter((o) => o.status === "pending");
 
   function addToCart(item: POSItem) {
     setCart((prev) => {
@@ -40,23 +46,60 @@ export function POS() {
   }
 
   function handleCheckout() {
-    // Deduct inventory for each sold item
-    setInventory(inventory.map((inv) => {
+    const now = new Date().toISOString();
+    const newLogs = [...inventoryLogs];
+
+    // Deduct inventory for each sold item and log changes
+    const newInventory = inventory.map((inv) => {
       let deduct = 0;
       for (const cartItem of cart) {
         const ing = cartItem.item.ingredients?.find((i) => i.inventoryId === inv.id);
         if (ing) deduct += ing.amount * cartItem.qty;
       }
       if (deduct === 0) return inv;
+      const before = inv.stock;
       const newStock = Math.max(0, inv.stock - deduct);
       const newStatus: typeof inv.status =
         newStock === 0 ? "critical" :
         newStock / inv.par < 0.3 ? "critical" :
         newStock / inv.par < 0.6 ? "low" : "ok";
+
+      newLogs.push({
+        id: uid(),
+        itemId: inv.id,
+        itemName: inv.name,
+        before,
+        after: newStock,
+        unit: inv.unit,
+        changedAt: now,
+        reason: "checkout",
+      });
+
       return { ...inv, stock: newStock, status: newStatus };
-    }));
+    });
+
+    setInventory(newInventory);
+    setInventoryLogs(newLogs);
+
+    // Create pending order
+    const order = {
+      id: uid(),
+      orderNo: orderCounter++,
+      items: cart.map((c) => ({ name: c.item.name, emoji: c.item.emoji, qty: c.qty })),
+      total,
+      createdAt: now,
+      status: "pending" as const,
+    };
+    setPendingOrders([...pendingOrders, order]);
+
     setPaid(true);
     setTimeout(() => { setCart([]); setPaid(false); }, 2200);
+  }
+
+  function markServed(orderId: string) {
+    setPendingOrders(pendingOrders.map((o) =>
+      o.id === orderId ? { ...o, status: "served" } : o
+    ));
   }
 
   return (
@@ -74,6 +117,17 @@ export function POS() {
             <ShoppingCart size={17} color="var(--c-xp)" />
           </div>
           <h1 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--c-t0)" }}>POS レジ</h1>
+          {pendingList.length > 0 && (
+            <div style={{
+              marginLeft: 8, minWidth: 22, height: 22, borderRadius: 11,
+              background: "var(--c-red)", color: "#fff",
+              fontSize: 11, fontWeight: 800,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 6px",
+            }}>
+              {pendingList.length}
+            </div>
+          )}
         </div>
 
         {/* Category tabs */}
@@ -136,7 +190,7 @@ export function POS() {
         </div>
       </div>
 
-      {/* ── Right: Cart ── */}
+      {/* ── Right: Cart + Queue ── */}
       <div style={{
         width: 280, borderLeft: "1px solid var(--c-border)", display: "flex", flexDirection: "column",
         background: "var(--c-bg1)",
@@ -239,6 +293,42 @@ export function POS() {
             </button>
           )}
         </div>
+
+        {/* ── 提供待ちキュー ── */}
+        {pendingList.length > 0 && (
+          <div style={{ borderTop: "1px solid var(--c-border)", padding: "12px 16px", maxHeight: 240, overflowY: "auto" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-t0)", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+              <Clock size={12} color="var(--c-xp)" />
+              提供待ち ({pendingList.length}件)
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {pendingList.map((order) => (
+                <div key={order.id} style={{
+                  background: "var(--c-bg2)", borderRadius: 8, padding: "8px 10px",
+                  border: "1px solid var(--c-border)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-xp)" }}>#{order.orderNo}</span>
+                    <button
+                      onClick={() => markServed(order.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 3, padding: "3px 8px",
+                        borderRadius: 6, border: "none", cursor: "pointer",
+                        fontSize: 10, fontWeight: 700,
+                        background: "var(--c-green)", color: "#fff",
+                      }}
+                    >
+                      <Check size={10} /> 提供完了
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "var(--c-t1)" }}>
+                    {order.items.map((i) => `${i.emoji}${i.name}×${i.qty}`).join(" · ")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

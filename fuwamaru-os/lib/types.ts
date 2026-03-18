@@ -285,6 +285,32 @@ export interface Stat {
 }
 
 // ─────────────────────────────────────────────────────────
+// 在庫変更履歴
+// ─────────────────────────────────────────────────────────
+export interface InventoryLog {
+  id: string;
+  itemId: string;
+  itemName: string;
+  before: number;
+  after: number;
+  unit: string;
+  changedAt: string;
+  reason: "checkout" | "manual" | "adjustment";
+}
+
+// ─────────────────────────────────────────────────────────
+// 提供待ち注文
+// ─────────────────────────────────────────────────────────
+export interface PendingOrder {
+  id: string;
+  orderNo: number;
+  items: { name: string; emoji: string; qty: number }[];
+  total: number;
+  createdAt: string;
+  status: "pending" | "served";
+}
+
+// ─────────────────────────────────────────────────────────
 // アプリ状態
 // ─────────────────────────────────────────────────────────
 export interface AppState {

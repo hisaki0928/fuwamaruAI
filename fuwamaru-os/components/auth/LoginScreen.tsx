@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Crown, Shield, Zap, Lock, Eye, EyeOff, X, AlertCircle } from "lucide-react";
 import type { User } from "@/lib/types";
 import { REGISTERED_USERS } from "@/lib/mock-data";
+import { useStore } from "@/lib/store";
 
 interface LoginScreenProps {
   onLogin: (userId: string) => void;
@@ -18,10 +19,12 @@ const ROLE_META = {
 // ─── パスワードモーダル ───────────────────────────────────
 function PasswordModal({
   user,
+  storedPassword,
   onSuccess,
   onClose,
 }: {
   user: User;
+  storedPassword: string;
   onSuccess: () => void;
   onClose: () => void;
 }) {
@@ -33,7 +36,7 @@ function PasswordModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (pw === user.password) {
+    if (pw === storedPassword) {
       onSuccess();
     } else {
       setError(true);
@@ -168,7 +171,6 @@ function UserCard({
 }) {
   const [hov, setHov] = useState(false);
   const meta = ROLE_META[user.role];
-  const isAdmin = user.role !== "staff";
   const xpPct = Math.round((user.xp / user.xpMax) * 100);
 
   return (
@@ -221,35 +223,35 @@ function UserCard({
       </div>
 
       {/* Right: lock or arrow */}
-      {isAdmin ? (
-        <Lock size={14} color={hov ? meta.color : "var(--c-t2)"} style={{ flexShrink: 0, transition: "color 0.18s" }} />
-      ) : (
-        <div style={{
-          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-          background: hov ? meta.color : "var(--c-bg3)",
-          border: `1px solid ${hov ? meta.color : "var(--c-border)"}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.18s",
-        }}>
-          <span style={{ fontSize: 10, color: hov ? "#000" : "var(--c-t2)" }}>→</span>
-        </div>
-      )}
+      <div style={{
+        width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+        background: hov ? meta.color : "var(--c-bg3)",
+        border: `1px solid ${hov ? meta.color : "var(--c-border)"}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.18s",
+      }}>
+        <span style={{ fontSize: 10, color: hov ? "#000" : "var(--c-t2)" }}>→</span>
+      </div>
     </button>
   );
 }
 
 // ─── メイン LoginScreen ───────────────────────────────────
 export function LoginScreen({ onLogin }: LoginScreenProps) {
+  const { passwords } = useStore();
   const [pwTarget, setPwTarget] = useState<User | null>(null);
 
   const admins = REGISTERED_USERS.filter((u) => u.role !== "staff");
   const staffs = REGISTERED_USERS.filter((u) => u.role === "staff");
 
   function handleCardClick(user: User) {
-    if (user.role === "staff") {
-      onLogin(user.id);
-    } else {
+    const pw = passwords[user.id];
+    if (pw) {
+      // パスワードが設定されている場合はモーダルを表示
       setPwTarget(user);
+    } else {
+      // パスワード未設定の場合は直接ログイン
+      onLogin(user.id);
     }
   }
 
@@ -338,6 +340,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       {pwTarget && (
         <PasswordModal
           user={pwTarget}
+          storedPassword={passwords[pwTarget.id] ?? ""}
           onSuccess={() => { onLogin(pwTarget.id); setPwTarget(null); }}
           onClose={() => setPwTarget(null)}
         />

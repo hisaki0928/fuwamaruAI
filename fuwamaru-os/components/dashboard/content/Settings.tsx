@@ -6,6 +6,7 @@ import {
   Save, Eye, EyeOff, RefreshCw, Trash2, Plus, Check,
 } from "lucide-react";
 import type { User as UserType } from "@/lib/types";
+import { useStore } from "@/lib/store";
 
 interface SettingsProps { user: UserType; }
 
@@ -311,9 +312,28 @@ function AuditSection() {
 }
 
 function AccountSection({ user }: { user: UserType }) {
+  const { passwords, setPasswords } = useStore();
   const [showPwForm, setShowPwForm] = useState(false);
-  const [curPw, setCurPw] = useState("");
-  const [newPw, setNewPw] = useState("");
+  const [curPw, setCurPw]           = useState("");
+  const [newPw, setNewPw]           = useState("");
+  const [pwMsg, setPwMsg]           = useState<{ ok: boolean; text: string } | null>(null);
+
+  function handleChangePassword() {
+    const current = passwords[user.id] ?? "";
+    if (current && curPw !== current) {
+      setPwMsg({ ok: false, text: "現在のパスワードが正しくありません" });
+      return;
+    }
+    if (newPw.length < 4) {
+      setPwMsg({ ok: false, text: "新しいパスワードは4文字以上にしてください" });
+      return;
+    }
+    setPasswords({ ...passwords, [user.id]: newPw });
+    setCurPw("");
+    setNewPw("");
+    setPwMsg({ ok: true, text: "パスワードを変更しました" });
+    setTimeout(() => { setShowPwForm(false); setPwMsg(null); }, 2000);
+  }
 
   return (
     <div>
@@ -324,7 +344,7 @@ function AccountSection({ user }: { user: UserType }) {
         }}>{user.role}</span>
       </Row>
       <Row label="パスワード変更" sub="セキュリティを定期的に更新しましょう">
-        <button onClick={() => setShowPwForm(!showPwForm)} style={{
+        <button onClick={() => { setShowPwForm(!showPwForm); setPwMsg(null); }} style={{
           padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
           background: "var(--c-bg2)", border: "1px solid var(--c-border)", color: "var(--c-t1)", cursor: "pointer",
           display: "flex", alignItems: "center", gap: 5,
@@ -334,19 +354,34 @@ function AccountSection({ user }: { user: UserType }) {
       </Row>
       {showPwForm && (
         <div style={{ background: "var(--c-bg2)", borderRadius: 10, padding: "14px", margin: "0 0 4px" }}>
-          {[
-            { label: "現在のパスワード", val: curPw, set: setCurPw },
-            { label: "新しいパスワード", val: newPw, set: setNewPw },
-          ].map(({ label, val, set }) => (
-            <div key={label} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-t2)", marginBottom: 4 }}>{label}</div>
-              <input type="password" value={val} onChange={(e) => set(e.target.value)} style={{
+          {passwords[user.id] && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-t2)", marginBottom: 4 }}>現在のパスワード</div>
+              <input type="password" value={curPw} onChange={(e) => { setCurPw(e.target.value); setPwMsg(null); }} style={{
                 width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 13, boxSizing: "border-box",
                 background: "var(--c-bg3)", border: "1px solid var(--c-border)", color: "var(--c-t0)", outline: "none",
               }} />
             </div>
-          ))}
-          <SaveBtn />
+          )}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-t2)", marginBottom: 4 }}>新しいパスワード</div>
+            <input type="password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwMsg(null); }} style={{
+              width: "100%", padding: "8px 10px", borderRadius: 8, fontSize: 13, boxSizing: "border-box",
+              background: "var(--c-bg3)", border: "1px solid var(--c-border)", color: "var(--c-t0)", outline: "none",
+            }} />
+          </div>
+          {pwMsg && (
+            <div style={{ fontSize: 12, marginBottom: 8, color: pwMsg.ok ? "var(--c-green)" : "var(--c-red)", fontWeight: 600 }}>
+              {pwMsg.text}
+            </div>
+          )}
+          <button onClick={handleChangePassword} style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "9px 18px",
+            borderRadius: 9, cursor: "pointer", fontSize: 13, fontWeight: 700, border: "none",
+            background: "var(--c-xp)", color: "#fff",
+          }}>
+            <Save size={14} /> パスワードを変更
+          </button>
         </div>
       )}
       <Row label="データエクスポート" sub="全データをCSVでダウンロード">

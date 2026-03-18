@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import {
   Database, Plus, Pencil, Trash2, X, ImagePlus,
-  ShoppingCart, ShoppingBag, Trophy, Award, Package, BookOpen, ThumbsUp,
+  ShoppingCart, ShoppingBag, Trophy, Award, Package, BookOpen, ThumbsUp, KeyRound,
 } from "lucide-react";
 import type {
   POSItem, POSIngredient, ShopItem, Mission, Badge, InventoryItem, WikiArticle, Proposal,
@@ -11,6 +11,7 @@ import type {
   InvCategory, StockStatus, WikiCategory, ProposalStatus,
 } from "@/lib/types";
 import { useStore } from "@/lib/store";
+import { REGISTERED_USERS } from "@/lib/mock-data";
 
 // ── ID helper ──────────────────────────────────────────────
 function uid() { return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`; }
@@ -26,6 +27,7 @@ const TABS = [
   { id: "inventory", label: "在庫",         icon: Package      },
   { id: "wiki",      label: "Wiki",         icon: BookOpen     },
   { id: "proposals", label: "投票・提案",   icon: ThumbsUp     },
+  { id: "passwords", label: "パスワード管理", icon: KeyRound   },
 ] as const;
 type TabId = typeof TABS[number]["id"];
 
@@ -753,6 +755,131 @@ function ProposalsTab() {
 }
 
 // ─────────────────────────────────────────────────────────
+// パスワード管理
+// ─────────────────────────────────────────────────────────
+const ROLE_LABELS: Record<string, string> = {
+  owner: "オーナー", manager: "マネージャー", staff: "スタッフ",
+};
+const ROLE_COLORS: Record<string, string> = {
+  owner: "#f59e0b", manager: "#60a5fa", staff: "#a78bfa",
+};
+
+function PasswordsTab() {
+  const { passwords, setPasswords } = useStore();
+  const [editId, setEditId]     = useState<string | null>(null);
+  const [newPw, setNewPw]       = useState("");
+  const [savedId, setSavedId]   = useState<string | null>(null);
+
+  function handleSet(userId: string) {
+    const updated = { ...passwords, [userId]: newPw };
+    setPasswords(updated);
+    setEditId(null);
+    setNewPw("");
+    setSavedId(userId);
+    setTimeout(() => setSavedId(null), 2000);
+  }
+
+  function handleReset(userId: string) {
+    if (!confirm(`${REGISTERED_USERS.find((u) => u.id === userId)?.name} のパスワードをリセットしますか？`)) return;
+    const updated = { ...passwords };
+    delete updated[userId];
+    setPasswords(updated);
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-t0)" }}>パスワード管理</div>
+        <div style={{ fontSize: 12, color: "var(--c-t2)", marginTop: 2 }}>
+          全ユーザーのパスワード状況を確認・変更・リセットできます
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {REGISTERED_USERS.map((user) => {
+          const hasPw = !!passwords[user.id];
+          const isEditing = editId === user.id;
+          const justSaved = savedId === user.id;
+          return (
+            <div key={user.id} style={{
+              background: "var(--c-bg2)", borderRadius: 10, border: "1px solid var(--c-border)",
+              padding: "12px 14px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{user.avatarEmoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-t0)" }}>{user.name}</div>
+                  <div style={{ display: "flex", gap: 8, fontSize: 11, marginTop: 2 }}>
+                    <span style={{ color: ROLE_COLORS[user.role], fontWeight: 700 }}>{ROLE_LABELS[user.role]}</span>
+                    <span style={{
+                      color: hasPw ? "var(--c-green)" : "var(--c-t2)",
+                      fontWeight: hasPw ? 700 : 400,
+                    }}>
+                      {hasPw ? "パスワード設定済" : "未設定（直接ログイン）"}
+                    </span>
+                    {justSaved && <span style={{ color: "var(--c-green)", fontWeight: 700 }}>保存しました</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={() => { setEditId(isEditing ? null : user.id); setNewPw(""); }}
+                    style={{
+                      padding: "5px 10px", borderRadius: 7, border: "1px solid var(--c-border)",
+                      background: isEditing ? "var(--c-xp)" : "var(--c-bg3)",
+                      color: isEditing ? "#fff" : "var(--c-t1)",
+                      cursor: "pointer", fontSize: 11, fontWeight: 600,
+                    }}
+                  >
+                    {isEditing ? "キャンセル" : hasPw ? "変更" : "設定"}
+                  </button>
+                  {hasPw && (
+                    <button
+                      onClick={() => handleReset(user.id)}
+                      style={{
+                        padding: "5px 10px", borderRadius: 7, border: `1px solid var(--c-red)`,
+                        background: "transparent", color: "var(--c-red)",
+                        cursor: "pointer", fontSize: 11, fontWeight: 600,
+                      }}
+                    >
+                      リセット
+                    </button>
+                  )}
+                </div>
+              </div>
+              {isEditing && (
+                <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
+                  <input
+                    type="text"
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    placeholder="新しいパスワードを入力"
+                    style={{ ...fi, flex: 1 }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && newPw.length >= 4) handleSet(user.id); }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => handleSet(user.id)}
+                    disabled={newPw.length < 4}
+                    style={{
+                      padding: "8px 14px", borderRadius: 8, border: "none",
+                      background: newPw.length >= 4 ? "var(--c-xp)" : "var(--c-bg3)",
+                      color: newPw.length >= 4 ? "#fff" : "var(--c-t2)",
+                      cursor: newPw.length >= 4 ? "pointer" : "not-allowed",
+                      fontSize: 12, fontWeight: 700, flexShrink: 0,
+                    }}
+                  >
+                    保存
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // Main Admin screen
 // ─────────────────────────────────────────────────────────
 export function Admin() {
@@ -767,6 +894,7 @@ export function Admin() {
       case "inventory": return <InventoryTab />;
       case "wiki":      return <WikiTab />;
       case "proposals": return <ProposalsTab />;
+      case "passwords": return <PasswordsTab />;
     }
   }
 
