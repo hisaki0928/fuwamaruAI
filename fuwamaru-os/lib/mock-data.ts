@@ -6,7 +6,7 @@ import type {
 import {
   LayoutDashboard, ShoppingCart, Calendar, Clock,
   FileText, Package, Trophy, Award, BarChart2,
-  ShoppingBag, Users, BookOpen, ThumbsUp, Settings,
+  ShoppingBag, Users, BookOpen, ThumbsUp, Settings, ClipboardList,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────
@@ -423,8 +423,9 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     section: "実務",
     items: [
-      { id: "pos",       label: "POS レジ",   icon: ShoppingCart },
-      { id: "shift",     label: "シフト管理", icon: Calendar },
+      { id: "pos",       label: "POS レジ",    icon: ShoppingCart },
+      { id: "orders",    label: "オーダー管理", icon: ClipboardList },
+      { id: "shift",     label: "シフト管理",  icon: Calendar },
       { id: "timeclock", label: "タイムカード", icon: Clock },
       { id: "report",    label: "日報 AI 評価", icon: FileText },
       { id: "inventory", label: "在庫管理",   icon: Package },

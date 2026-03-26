@@ -17,6 +17,7 @@ export type NavId =
   | "dashboard"
   // 実務
   | "pos"
+  | "orders"
   | "shift"
   | "timeclock"
   | "report"
@@ -304,10 +305,16 @@ export interface InventoryLog {
 export interface PendingOrder {
   id: string;
   orderNo: number;
-  items: { name: string; emoji: string; qty: number }[];
+  items: { name: string; emoji: string; qty: number; note?: string }[];
   total: number;
+  subtotal: number;
+  discount: number;
+  paymentMethod: "card" | "cash";
+  cashReceived?: number;
+  tableNote?: string;
   createdAt: string;
-  status: "pending" | "served";
+  servedAt?: string;
+  status: "pending" | "served" | "cancelled";
 }
 
 // ─────────────────────────────────────────────────────────

@@ -19,6 +19,7 @@ import { Wiki } from "./content/Wiki";
 import { Vote } from "./content/Vote";
 import { Settings } from "./content/Settings";
 import { Admin } from "./content/Admin";
+import { OrderQueue } from "./content/OrderQueue";
 
 interface DashboardProps {
   user: User;
@@ -39,6 +40,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       case "shift":      return <Shift />;
       case "timeclock":  return <Timeclock />;
       case "pos":        return <POS />;
+      case "orders":     return <OrderQueue />;
       case "inventory":  return <Inventory />;
       case "community":  return <Community user={user} />;
       case "wiki":       return <Wiki />;
